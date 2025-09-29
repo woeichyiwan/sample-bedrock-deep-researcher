@@ -1,7 +1,7 @@
 import logging
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
-from langgraph.constants import Send # <-- Import Send
+from langgraph.constants import Send
 
 from .config import Configuration
 from .model import (ArticleInputState, ArticleOutputState, ArticleState,

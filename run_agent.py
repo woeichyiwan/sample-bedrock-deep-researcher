@@ -6,10 +6,14 @@ from bedrock_deep_research import BedrockDeepResearch
 def main():
     load_dotenv()
 
-    # Load the bearer token from environment variables
+    # Load the environment variables
     bearer_token = os.getenv("AWS_BEARER_TOKEN_BEDROCK")
     if not bearer_token:
         raise ValueError("AWS_BEARER_TOKEN_BEDROCK environment variable not set.")
+    
+    region = os.getenv("AWS_REGION")
+    if not region:
+        raise ValueError("AWS_REGION environment variable not set.")
 
     # Configuration for the agent
     config = {
@@ -20,9 +24,8 @@ def main():
             "number_of_queries": 2,
             "planner_model": "apac.anthropic.claude-3-5-sonnet-20241022-v2:0",
             "writer_model": "apac.anthropic.claude-sonnet-4-20250514-v1:0",
-            # Pass the token and region into the config
             "bedrock_api_key": bearer_token,
-            "bedrock_region": "ap-southeast-1", # Ensure this matches your endpoint
+            "bedrock_region": region,
         }
     }
 

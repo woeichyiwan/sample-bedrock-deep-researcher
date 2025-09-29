@@ -44,9 +44,8 @@ class Configuration:
     max_search_depth: int = 2  # Maximum number of reflection + search iterations
     max_tokens: int = 2048
 
-    # bedrock_api_key: str = "ABSKQmVkcm9ja0FQSUtleS1kczV2LWF0LTExNjk4MTc3MjgwMzpDMzhDc0ZVandzeU03Ri9KN2hpbVE0MWp1VWJtcVA0TzhJSi9rQ0lFOHF2UHg4Wm9kTk04Um9HclFiST0="
     bedrock_api_key: str = os.getenv("AWS_BEARER_TOKEN_BEDROCK")
-    bedrock_region: str = "ap-southeast-1" # Or your preferred region
+    bedrock_region: str = os.getenv("AWS_REGION")
 
     planner_model: str = "apac.anthropic.claude-3-5-sonnet-20241022-v2:0"
     writer_model: str = "apac.anthropic.claude-sonnet-4-20250514-v1:0"
