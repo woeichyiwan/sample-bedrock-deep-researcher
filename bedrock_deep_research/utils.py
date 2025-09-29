@@ -106,3 +106,21 @@ def extract_xml_content(text: str, tag_name: str) -> str | None:
         return match.group(1).strip()
     else:
         return None
+    
+def extract_json_from_string(text: str) -> str:
+    """
+    Extracts a JSON string from a text that might contain markdown code blocks.
+    """
+    # Find the start of the JSON block
+    json_start = text.find('{')
+    if json_start == -1:
+        return ""
+
+    # Find the end of the JSON block
+    json_end = text.rfind('}')
+    if json_end == -1:
+        return ""
+
+    # Extract the JSON string
+    json_str = text[json_start:json_end+1]
+    return json_str

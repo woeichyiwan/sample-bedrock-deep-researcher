@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import List, Literal
 
@@ -11,11 +12,11 @@ from pydantic import BaseModel, Field
 
 from ..config import Configuration
 from ..model import Section, SectionState
-from ..utils import exponential_backoff_retry
+from ..utils import exponential_backoff_retry, extract_json_from_string
 from .section_web_researcher import SectionWebResearcher
+from ..custom_bedrock import ChatBedrockWithApiKey
 
 logger = logging.getLogger(__name__)
-
 
 class Feedback(BaseModel):
     """A feedback for a section with potential followup queries."""
@@ -75,7 +76,7 @@ section_writer_instructions = """You are an expert technical writer crafting one
 """
 
 # Instructions for section grading
-section_grader_instructions = """Review a section of an article relative to the specified topic:
+section_grader_instructions = """Review a section of an article relative to the specified topic.
 
 <section topic>
 {section_topic}
@@ -86,18 +87,14 @@ section_grader_instructions = """Review a section of an article relative to the 
 </section content>
 
 <task>
-Evaluate whether the section adequately covers the topic by checking technical accuracy and depth.
-
-If the section fails any criteria, generate specific follow-up search queries to gather missing information.
+Evaluate whether the section adequately covers the topic, checking for technical accuracy and depth.
+If the section fails, generate specific follow-up search queries to gather missing information.
 </task>
 
 <format>
-    grade: Literal["pass","fail"] = Field(
-        description="Evaluation result indicating whether the response meets requirements ('pass') or needs revision ('fail')."
-    )
-    follow_up_queries: List[SearchQuery] = Field(
-        description="List of follow-up search queries.",
-    )
+Respond with ONLY a valid JSON object with two keys:
+1. "grade": A string, either "pass" or "fail".
+2. "follow_up_queries": A list of strings containing search queries. If the grade is "pass", this should be an empty list.
 </format>
 """
 
@@ -120,8 +117,11 @@ class SectionWriter:
         writing_guidelines = configurable.writing_guidelines
 
         try:
-            writer_model = ChatBedrock(
-                model_id=configurable.writer_model, max_tokens=configurable.max_tokens)
+            writer_model = ChatBedrockWithApiKey(
+                model_id=configurable.writer_model,
+                api_key=configurable.bedrock_api_key,
+                region=configurable.bedrock_region,
+            )
 
             section.content = self._generate_section_content(
                 writer_model,
@@ -186,21 +186,18 @@ class SectionWriter:
 
     @exponential_backoff_retry(ClientError, max_retries=10)
     def _grade_section_content(
-        self, model: ChatBedrock, system_prompt: str, section: Section
+        self, model: ChatBedrockWithApiKey, system_prompt: str, section: Section
     ) -> Feedback:
-
         section_grader_instructions_formatted = system_prompt.format(
             section_topic=section.description, section=section.content
         )
 
-        structured_llm = model.with_structured_output(Feedback)
-        feedback = structured_llm.invoke(
-            [SystemMessage(content=section_grader_instructions_formatted)]
-            + [
-                HumanMessage(
-                    content="Grade the article and consider follow-up questions for missing information:"
-                )
-            ]
-        )
+        messages = [
+            SystemMessage(content=section_grader_instructions_formatted),
+            HumanMessage(content="Grade the article section and provide follow-up questions if needed."),
+        ]
 
-        return feedback
+        response = model.invoke(messages)
+        json_string = extract_json_from_string(response.content)
+        
+        return Feedback.model_validate_json(json_string)

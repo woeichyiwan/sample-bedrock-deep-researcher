@@ -21,8 +21,8 @@ pydantic = "^2.10.6"
 watchdog = "^6.0.0"
 beautifulsoup4 = "^4.12.3"
 langchain-community = "^0.3.8"
-streamlit = "1.42.2"
-pyperclip = "^1.9.0"
+# streamlit = "1.42.2"
+# pyperclip = "^1.9.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"

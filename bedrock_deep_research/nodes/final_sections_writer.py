@@ -6,6 +6,7 @@ from langchain_core.runnables import RunnableConfig
 from ..config import Configuration
 from ..model import Section, SectionState
 from ..utils import exponential_backoff_retry
+from ..custom_bedrock import ChatBedrockWithApiKey
 
 final_section_writer_instructions = """You are an expert technical writer crafting a section that synthesizes information from the rest of the article.
 
@@ -76,8 +77,11 @@ class FinalSectionsWriter:
 
         configurable = Configuration.from_runnable_config(config)
 
-        writer_model = ChatBedrock(
-            model_id=configurable.writer_model, streaming=True)
+        writer_model = ChatBedrockWithApiKey(
+            model_id=configurable.writer_model,
+            api_key=configurable.bedrock_api_key,
+            region=configurable.bedrock_region,
+        )   
 
         section.content = self._generate_final_sections(
             writer_model,

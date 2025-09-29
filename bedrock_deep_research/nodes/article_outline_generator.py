@@ -1,3 +1,4 @@
+import json
 import logging
 
 from langchain_aws import ChatBedrock
@@ -6,6 +7,8 @@ from langchain_core.runnables import RunnableConfig
 
 from ..config import Configuration
 from ..model import ArticleState, Outline, Section
+from ..custom_bedrock import ChatBedrockWithApiKey
+from ..utils import extract_json_from_string
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +23,10 @@ system_prompt = """You are an expert technical writer tasked to plan an article 
     - description: Brief summary of section content (2-3 sentences)
 5. Introduction and conclusion will not require research because they can distill information from other parts of the article.
 6. If a feedback is provided, use it to improve the outline or the title.
-7. Return the title and sections as a valid JSON object without any additional text.
+7. Return ONLY a valid JSON object with the keys "title" and "sections". Do not include any other text or markdown.
 </instructions>
 """
+
 user_prompt_template = """
 The topic of the article is:
 <topic>
@@ -65,7 +69,8 @@ class ArticleOutlineGenerator:
             feedback=feedback,
         )
         outline = self.generate_outline(
-            configurable.planner_model, configurable.max_tokens, system_prompt, user_prompt)
+            configurable, system_prompt, user_prompt
+        )
 
         logger.info(f"Generated sections: {outline.sections}")
         sections = [
@@ -78,17 +83,19 @@ class ArticleOutlineGenerator:
         logger.info(f"Sections -> {sections}")
         return {"title": outline.title, "sections": sections}
 
-    def generate_outline(self, model_id: str, max_tokens: int, system_prompt: str, user_prompt: str):
-
-        planner_model = ChatBedrock(
-            model_id=model_id, max_tokens=max_tokens
-        ).with_structured_output(Outline)
-
-        return planner_model.invoke(
-            [SystemMessage(content=system_prompt)]
-            + [
-                HumanMessage(
-                    content=user_prompt
-                )
-            ]
+    def generate_outline(self, configurable: Configuration, system_prompt: str, user_prompt: str):
+        planner_model = ChatBedrockWithApiKey(
+            model_id=configurable.planner_model,
+            api_key=configurable.bedrock_api_key,
+            region=configurable.bedrock_region,
         )
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ]
+        
+        response = planner_model.invoke(messages)
+        json_string = extract_json_from_string(response.content)
+        
+        return Outline.model_validate_json(json_string)
