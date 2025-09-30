@@ -20,7 +20,8 @@ class WebSearch:
         tavily_async (AsyncTavilyClient): Async client for Tavily API
     """
 
-    MAX_RESULTS = 5
+    # MAX_RESULTS = 5
+    MAX_RESULTS = 2
     SEARCH_TOPIC = "general"
 
     def __init__(

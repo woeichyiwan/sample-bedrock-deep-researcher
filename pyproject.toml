@@ -10,12 +10,14 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.12"
-langgraph = "^0.2.44"
+# python = "^3.12"
+python = ">=3.12,<3.13"
+# langgraph = "^0.2.44"
+# langgraph-checkpoint-sqlite = "^2.0.1"
 langchain-aws = "^0.2.15"
 langchain = "^0.3.19"
+pyautogen = "^0.2.35"
 python-dotenv = "^1.0.1"
-langgraph-checkpoint-sqlite = "^2.0.1"
 tavily-python = "^0.5.1"
 pydantic = "^2.10.6"
 watchdog = "^6.0.0"
